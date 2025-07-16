@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ban'd - Online Card Game</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Ban'd</h1>
+            <p class="subtitle">The ultimate card game experience</p>
+        </header>
+
+        <main class="main-content">
+            <div class="game-setup">
+                <div class="setup-card">
+                    <h2>Create or Join a Game</h2>
+                    
+                    <form class="nickname-form" id="nicknameForm">
+                        <div class="input-group">
+                            <label for="nickname">Enter your nickname:</label>
+                            <input type="text" id="nickname" name="nickname" required maxlength="20" placeholder="Your nickname">
+                        </div>
+                    </form>
+
+                    <div class="game-options">
+                        <div class="option-card">
+                            <h3>Create New Room</h3>
+                            <p>Start a new game and invite friends</p>
+                            <button class="btn btn-primary" onclick="createRoom()">Create Room</button>
+                        </div>
+
+                        <div class="option-card">
+                            <h3>Join Existing Room</h3>
+                            <p>Enter a room code to join friends</p>
+                            <div class="input-group">
+                                <input type="text" id="roomCode" placeholder="Room Code" maxlength="6">
+                                <button class="btn btn-secondary" onclick="joinRoom()">Join Room</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rules-section">
+                    <h3>How to Play</h3>
+                    <div class="rules-grid">
+                        <div class="rule-item">
+                            <div class="rule-number">1</div>
+                            <div class="rule-text">Start with 4 cards, view bottom 2</div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">2</div>
+                            <div class="rule-text">Draw from deck or discard pile</div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">3</div>
+                            <div class="rule-text">Replace cards to get lowest score</div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">4</div>
+                            <div class="rule-text">Aces = 0, Red Kings = -5</div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">5</div>
+                            <div class="rule-text">Cards 7-9 have special powers</div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">6</div>
+                            <div class="rule-text">First to call "Ban'd" wins!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function createRoom() {
+            const nickname = document.getElementById('nickname').value.trim();
+            if (!nickname) {
+                alert('Please enter a nickname first!');
+                return;
+            }
+            
+            const roomId = generateRoomId();
+            window.location.href = `/room/${roomId}?nickname=${encodeURIComponent(nickname)}`;
+        }
+
+        function joinRoom() {
+            const nickname = document.getElementById('nickname').value.trim();
+            const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+            
+            if (!nickname) {
+                alert('Please enter a nickname first!');
+                return;
+            }
+            
+            if (!roomCode) {
+                alert('Please enter a room code!');
+                return;
+            }
+            
+            window.location.href = `/room/${roomCode}?nickname=${encodeURIComponent(nickname)}`;
+        }
+
+        // Enter key handling
+        document.getElementById('nickname').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createRoom();
+            }
+        });
+
+        document.getElementById('roomCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                joinRoom();
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ban'd - Game Room</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <div class="room-info">
+                <h1>Room: {{ room_id }}</h1>
+                <button class="btn btn-small" onclick="copyRoomCode()">📋 Copy Code</button>
+            </div>
+            <div class="game-status">
+                <span id="gameStatus">Waiting for players...</span>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <!-- Players Section -->
+            <div class="players-section">
+                <div class="players-grid" id="playersGrid">
+                    <!-- Players will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Game Area -->
+            <div class="game-area">
+                <!-- Deck and Discard Pile -->
+                <div class="table-cards">
+                    <div class="deck-area">
+                        <div class="card-pile deck-pile" id="deckPile" onclick="drawFromDeck()">
+                            <div class="card card-back">Deck</div>
+                        </div>
+                        <div class="card-pile discard-pile" id="discardPile" onclick="drawFromDiscard()">
+                            <div class="card" id="discardCard">
+                                <!-- Discard card will be shown here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player's Hand -->
+                <div class="player-hand">
+                    <h3>Your Cards</h3>
+                    <div class="hand-cards" id="playerHand">
+                        <!-- Player's cards will be populated here -->
+                    </div>
+                    <div class="drawn-card-area" id="drawnCardArea" style="display: none;">
+                        <div class="drawn-card" id="drawnCard"></div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="discardDrawnCard()">Discard</button>
+                        </div>
+                        <div class="special-actions" id="specialActions" style="display: none;">
+                            <h4>Special Power Available!</h4>
+                            <div class="special-buttons">
+                                <button class="btn btn-warning" id="useSpecial7" onclick="useSpecialCard7()" style="display: none;">👁️ View Your Card</button>
+                                <button class="btn btn-warning" id="useSpecial8" onclick="useSpecialCard8()" style="display: none;">🔍 View Other's Card</button>
+                                <button class="btn btn-warning" id="useSpecial9" onclick="useSpecialCard9()" style="display: none;">🔄 Swap Cards</button>
+                            </div>
+                            <p class="special-note">You can use the special power OR proceed normally</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Actions -->
+                <div class="game-actions" id="gameActions">
+                    <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" style="display: none;">Start Game</button>
+                    <div class="peek-phase" id="peekPhase" style="display: none;">
+                        <div class="peek-instructions">
+                            <h3>Look at your bottom 2 cards!</h3>
+                            <p>Click the button to peek at your cards. Remember them - they'll be hidden again!</p>
+                        </div>
+                        <button class="btn btn-warning" id="peekBtn" onclick="peekCards()">👀 Peek at Cards</button>
+                        <div class="waiting-for-peeks" id="waitingForPeeks" style="display: none;">
+                            <p>Waiting for other players to peek...</p>
+                            <div id="peekingPlayersList"></div>
+                        </div>
+                    </div>
+                    <div class="turn-indicator" id="turnIndicator" style="display: none;">
+                        <span id="turnText">Waiting for your turn...</span>
+                    </div>
+                    <button class="btn btn-danger" id="callBandBtn" onclick="callBand()" style="display: none;">Call Ban'd!</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Game Results Modal -->
+        <div class="game-results-modal" id="gameResultsModal" style="display: none;">
+            <div class="modal-content">
+                <h2>Game Over!</h2>
+                <div class="results-content" id="resultsContent">
+                    <!-- Results will be populated here -->
+                </div>
+                <button class="btn btn-primary" onclick="hideGameResults()">Close</button>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <aside class="right-sidebar">
+            <!-- Chat Section -->
+            <div class="chat-section">
+                <div class="chat-header">
+                    <h3>Chat</h3>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Chat messages will appear here -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200">
+                    <button class="btn btn-small" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+
+            <!-- Card Reference Section -->
+            <div class="card-reference-section">
+                <div class="reference-header">
+                    <h3>Card Values & Powers</h3>
+                </div>
+                <div class="reference-content">
+                    <div class="value-section">
+                        <h4>Card Values</h4>
+                        <div class="value-grid">
+                            <div class="value-item">
+                                <span class="card-ref">A</span>
+                                <span class="value-text">= 0 pts</span>
+                            </div>
+                            <div class="value-item">
+                                <span class="card-ref">2-6</span>
+                                <span class="value-text">= Face value</span>
+                            </div>
+                            <div class="value-item">
+                                <span class="card-ref">7-9</span>
+                                <span class="value-text">= Face + Power</span>
+                            </div>
+                            <div class="value-item">
+                                <span class="card-ref">10,J</span>
+                                <span class="value-text">= 10 pts</span>
+                            </div>
+                            <div class="value-item">
+                                <span class="card-ref">Q</span>
+                                <span class="value-text">= 12 pts</span>
+                            </div>
+                            <div class="value-item special">
+                                <span class="card-ref red">K♥♦</span>
+                                <span class="value-text">= -5 pts</span>
+                            </div>
+                            <div class="value-item">
+                                <span class="card-ref">K♠♣</span>
+                                <span class="value-text">= 13 pts</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="power-section">
+                        <h4>Special Powers</h4>
+                        <div class="power-list">
+                            <div class="power-item">
+                                <span class="power-card">7</span>
+                                <span class="power-text">👁️ View your card</span>
+                            </div>
+                            <div class="power-item">
+                                <span class="power-card">8</span>
+                                <span class="power-text">🔍 View other's card</span>
+                            </div>
+                            <div class="power-item">
+                                <span class="power-card">9</span>
+                                <span class="power-text">🔄 Swap any 2 cards</span>
+                            </div>
+                        </div>
+                        <div class="power-note">
+                            <small>Powers only activate when drawn!</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let ws = null;
+        let playerId = null;
+        let gameState = null;
+        let roomId = "{{ room_id }}";
+
+        function initializeGame() {
+            // Get nickname from URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const nickname = urlParams.get('nickname') || 'Anonymous';
+            
+            // Generate unique player ID
+            playerId = 'player_' + Math.random().toString(36).substring(2, 15);
+            
+            // Initialize WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/${roomId}/${playerId}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('Connected to game room');
+                // Join the room
+                ws.send(JSON.stringify({
+                    type: 'join_room',
+                    nickname: nickname
+                }));
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+            
+            ws.onclose = function() {
+                console.log('Disconnected from game room');
+                // TODO: Show reconnection interface
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function handleMessage(data) {
+            switch(data.type) {
+                case 'game_state':
+                    gameState = data;
+                    updateGameInterface();
+                    break;
+                case 'chat':
+                    addChatMessage(data.player, data.message);
+                    break;
+                case 'game_ended':
+                    showGameResults(data.results);
+                    break;
+                case 'cards_peeked':
+                    handleCardsPeeked(data);
+                    break;
+                case 'error':
+                    addChatMessage('Error', data.message);
+                    break;
+                case 'reconnected':
+                    addChatMessage('System', data.message);
+                    break;
+                case 'card_revealed':
+                case 'other_card_viewed':
+                case 'cards_swapped':
+                    addChatMessage('System', data.message);
+                    break;
+            }
+        }
+
+        function updateGameInterface() {
+            if (!gameState) return;
+
+            // Update players
+            updatePlayersGrid();
+            
+            // Update game status
+            updateGameStatus();
+            
+            // Update player's hand
+            updatePlayerHand();
+            
+            // Update table cards
+            updateTableCards();
+            
+            // Update game actions
+            updateGameActions();
+        }
+
+        function updatePlayersGrid() {
+            const playersGrid = document.getElementById('playersGrid');
+            playersGrid.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const playerCard = document.createElement('div');
+                playerCard.className = `player-card ${player.is_current ? 'current-player' : ''}`;
+                playerCard.innerHTML = `
+                    <div class="player-name">${player.nickname}</div>
+                    <div class="player-cards">
+                        ${Array(player.card_count).fill(0).map(() => '<div class="mini-card"></div>').join('')}
+                    </div>
+                `;
+                playersGrid.appendChild(playerCard);
+            });
+        }
+
+        function updateGameStatus() {
+            const statusElement = document.getElementById('gameStatus');
+            
+            if (gameState.state === 'waiting') {
+                statusElement.textContent = `Waiting for players... (${gameState.players.length}/4)`;
+            } else if (gameState.state === 'playing') {
+                const currentPlayer = gameState.players[gameState.current_player];
+                statusElement.textContent = `${currentPlayer.nickname}'s turn`;
+            }
+        }
+
+        function updatePlayerHand() {
+            const playerHand = document.getElementById('playerHand');
+            const drawnCardArea = document.getElementById('drawnCardArea');
+            
+            if (!gameState.your_cards) return;
+            
+            playerHand.innerHTML = '';
+            
+            gameState.your_cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card hand-card';
+                cardElement.onclick = () => replaceCard(index);
+                
+                if (card.visible) {
+                    cardElement.innerHTML = `
+                        <div class="card-rank">${card.rank}</div>
+                        <div class="card-suit ${getSuitClass(card.suit)}">${getSuitSymbol(card.suit)}</div>
+                    `;
+                    cardElement.classList.add(getSuitColor(card.suit));
+                } else {
+                    cardElement.innerHTML = '<div class="card-back-small">?</div>';
+                    cardElement.classList.add('card-hidden');
+                }
+                
+                playerHand.appendChild(cardElement);
+            });
+
+            // Update drawn card
+            if (gameState.drawn_card) {
+                const drawnCard = document.getElementById('drawnCard');
+                const specialActions = document.getElementById('specialActions');
+                
+                drawnCard.className = 'card';
+                drawnCard.innerHTML = `
+                    <div class="card-rank">${gameState.drawn_card.rank}</div>
+                    <div class="card-suit ${getSuitClass(gameState.drawn_card.suit)}">${getSuitSymbol(gameState.drawn_card.suit)}</div>
+                `;
+                drawnCard.classList.add(getSuitColor(gameState.drawn_card.suit));
+                
+                // Show special actions if it's a special card (7, 8, 9)
+                if (gameState.drawn_card_is_special) {
+                    specialActions.style.display = 'block';
+                    
+                    // Hide all special buttons first
+                    document.getElementById('useSpecial7').style.display = 'none';
+                    document.getElementById('useSpecial8').style.display = 'none';
+                    document.getElementById('useSpecial9').style.display = 'none';
+                    
+                    // Show the appropriate special button
+                    if (gameState.drawn_card.rank === '7') {
+                        document.getElementById('useSpecial7').style.display = 'block';
+                    } else if (gameState.drawn_card.rank === '8') {
+                        document.getElementById('useSpecial8').style.display = 'block';
+                    } else if (gameState.drawn_card.rank === '9') {
+                        document.getElementById('useSpecial9').style.display = 'block';
+                    }
+                } else {
+                    specialActions.style.display = 'none';
+                }
+                
+                drawnCardArea.style.display = 'block';
+            } else {
+                drawnCardArea.style.display = 'none';
+            }
+        }
+
+        function updateTableCards() {
+            const discardCard = document.getElementById('discardCard');
+            
+            if (gameState.discard_top) {
+                discardCard.innerHTML = `
+                    <div class="card-rank">${gameState.discard_top.rank}</div>
+                    <div class="card-suit ${getSuitClass(gameState.discard_top.suit)}">${getSuitSymbol(gameState.discard_top.suit)}</div>
+                `;
+                discardCard.className = `card ${getSuitColor(gameState.discard_top.suit)}`;
+            } else {
+                discardCard.innerHTML = '<div class="card-back-small">Empty</div>';
+                discardCard.className = 'card card-empty';
+            }
+        }
+
+        function updateGameActions() {
+            const startGameBtn = document.getElementById('startGameBtn');
+            const peekPhase = document.getElementById('peekPhase');
+            const peekBtn = document.getElementById('peekBtn');
+            const waitingForPeeks = document.getElementById('waitingForPeeks');
+            const turnIndicator = document.getElementById('turnIndicator');
+            const turnText = document.getElementById('turnText');
+            const callBandBtn = document.getElementById('callBandBtn');
+            
+            if (gameState.state === 'waiting' && !gameState.peeking_phase && gameState.players.length >= 2) {
+                // Show start game button
+                startGameBtn.style.display = 'block';
+                peekPhase.style.display = 'none';
+                turnIndicator.style.display = 'none';
+                callBandBtn.style.display = 'none';
+            } else if (gameState.peeking_phase && gameState.your_cards && gameState.your_cards.length === 4) {
+                // Show peeking interface only if cards have been dealt
+                startGameBtn.style.display = 'none';
+                peekPhase.style.display = 'block';
+                turnIndicator.style.display = 'none';
+                callBandBtn.style.display = 'none';
+                
+                if (!gameState.has_peeked) {
+                    peekBtn.style.display = 'block';
+                    waitingForPeeks.style.display = 'none';
+                } else {
+                    peekBtn.style.display = 'none';
+                    waitingForPeeks.style.display = 'block';
+                    
+                    const peekingList = document.getElementById('peekingPlayersList');
+                    if (gameState.waiting_for_peeks.length > 0) {
+                        peekingList.innerHTML = `Waiting for: ${gameState.waiting_for_peeks.join(', ')}`;
+                    } else {
+                        peekingList.innerHTML = 'All players have peeked! Starting game...';
+                    }
+                }
+            } else if (gameState.state === 'playing') {
+                startGameBtn.style.display = 'none';
+                peekPhase.style.display = 'none';
+                turnIndicator.style.display = 'block';
+                
+                // Show Call Ban'd button if not in first round
+                callBandBtn.style.display = gameState.can_call_band ? 'block' : 'none';
+                
+                if (gameState.is_your_turn) {
+                    if (gameState.drawn_card) {
+                        if (gameState.drawn_card_is_special) {
+                            turnText.textContent = `You drew a ${gameState.drawn_card.rank}! Use its special power or proceed normally`;
+                        } else {
+                            turnText.textContent = 'Choose a card to replace or discard the drawn card';
+                        }
+                    } else {
+                        turnText.textContent = 'Your turn - Draw a card from the deck or discard pile';
+                    }
+                } else {
+                    const currentPlayer = gameState.players[gameState.current_player];
+                    turnText.textContent = `Waiting for ${currentPlayer.nickname}'s turn`;
+                }
+            } else if (gameState.state === 'finished') {
+                startGameBtn.style.display = 'none';
+                peekPhase.style.display = 'none';
+                turnIndicator.style.display = 'block';
+                callBandBtn.style.display = 'none';
+                turnText.textContent = 'Game Over!';
+            }
+        }
+
+        function getSuitSymbol(suit) {
+            switch(suit) {
+                case 'hearts': return '♥';
+                case 'diamonds': return '♦';
+                case 'clubs': return '♣';
+                case 'spades': return '♠';
+                default: return '';
+            }
+        }
+
+        function getSuitClass(suit) {
+            return `suit-${suit}`;
+        }
+
+        function getSuitColor(suit) {
+            return ['hearts', 'diamonds'].includes(suit) ? 'red' : 'black';
+        }
+
+        function startGame() {
+            if (ws) {
+                ws.send(JSON.stringify({ type: 'start_game' }));
+            }
+        }
+
+        function peekCards() {
+            if (ws && gameState.peeking_phase && !gameState.has_peeked) {
+                ws.send(JSON.stringify({ type: 'peek_cards' }));
+            }
+        }
+
+        function handleCardsPeeked(data) {
+            // Show a temporary overlay with the revealed cards
+            showPeekOverlay(data.cards, data.message);
+            addChatMessage('System', data.message);
+        }
+
+        function showPeekOverlay(cards, message) {
+            // Create overlay element
+            const overlay = document.createElement('div');
+            overlay.className = 'peek-overlay';
+            overlay.innerHTML = `
+                <div class="peek-content">
+                    <h2>Your Bottom Cards</h2>
+                    <p>${message}</p>
+                    <div class="peek-cards">
+                        ${cards.map(card => `
+                            <div class="card peeked-card ${getSuitColor(card.suit)}">
+                                <div class="card-rank">${card.rank}</div>
+                                <div class="card-suit ${getSuitClass(card.suit)}">${getSuitSymbol(card.suit)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="countdown" id="peekCountdown">Hiding in 5 seconds...</div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            
+            // Start countdown
+            let countdown = 5;
+            const countdownElement = document.getElementById('peekCountdown');
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = `Hiding in ${countdown} seconds...`;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    document.body.removeChild(overlay);
+                }
+            }, 1000);
+        }
+
+        function drawFromDeck() {
+            if (gameState.is_your_turn && !gameState.drawn_card && ws) {
+                ws.send(JSON.stringify({ 
+                    type: 'draw_card',
+                    from_discard: false
+                }));
+            }
+        }
+
+        function drawFromDiscard() {
+            if (gameState.is_your_turn && !gameState.drawn_card && gameState.discard_top && ws) {
+                ws.send(JSON.stringify({ 
+                    type: 'draw_card',
+                    from_discard: true
+                }));
+            }
+        }
+
+        function replaceCard(handIndex) {
+            if (gameState.is_your_turn && gameState.drawn_card && ws) {
+                ws.send(JSON.stringify({ 
+                    type: 'replace_card',
+                    hand_index: handIndex
+                }));
+            }
+        }
+
+        function discardDrawnCard() {
+            if (gameState.is_your_turn && gameState.drawn_card && ws) {
+                ws.send(JSON.stringify({ type: 'discard_drawn' }));
+            }
+        }
+
+        function callBand() {
+            if (gameState.can_call_band && ws) {
+                if (confirm('Are you sure you want to call Ban\'d? This will end the game and reveal all cards!')) {
+                    ws.send(JSON.stringify({ type: 'call_band' }));
+                }
+            }
+        }
+
+        function useSpecialCard7() {
+            // Card 7: View one of your own hidden cards
+            let cardIndex;
+            let validInput = false;
+            
+            while (!validInput) {
+                const input = prompt('Which of your cards do you want to view? (Enter 1, 2, 3, or 4)');
+                if (input === null) return; // User cancelled
+                
+                cardIndex = parseInt(input) - 1; // Convert to 0-based index
+                
+                if (cardIndex >= 0 && cardIndex <= 3) {
+                    // Check if the card is already visible
+                    if (gameState.your_cards[cardIndex].visible) {
+                        alert('You can already see that card! Choose a hidden card.');
+                    } else {
+                        validInput = true;
+                    }
+                } else {
+                    alert('Please enter a number between 1 and 4.');
+                }
+            }
+            
+            if (ws) {
+                ws.send(JSON.stringify({
+                    type: 'use_special',
+                    action: 'view_own',
+                    target: { card_index: cardIndex }
+                }));
+            }
+        }
+
+        function useSpecialCard8() {
+            // Card 8: View another player's card
+            if (gameState.players.length < 2) {
+                alert('No other players to view!');
+                return;
+            }
+            
+            // Show available players
+            const otherPlayers = gameState.players.filter(p => p.id !== playerId);
+            let playerOptions = otherPlayers.map((p, i) => `${i + 1}. ${p.nickname}`).join('\n');
+            
+            let playerIndex;
+            let validPlayerInput = false;
+            
+            while (!validPlayerInput) {
+                const input = prompt(`Which player's card do you want to view?\n${playerOptions}\n\nEnter the number:`);
+                if (input === null) return; // User cancelled
+                
+                playerIndex = parseInt(input) - 1;
+                if (playerIndex >= 0 && playerIndex < otherPlayers.length) {
+                    validPlayerInput = true;
+                } else {
+                    alert(`Please enter a number between 1 and ${otherPlayers.length}.`);
+                }
+            }
+            
+            let cardIndex;
+            let validCardInput = false;
+            
+            while (!validCardInput) {
+                const input = prompt('Which of their cards do you want to view? (Enter 1, 2, 3, or 4)');
+                if (input === null) return; // User cancelled
+                
+                cardIndex = parseInt(input) - 1;
+                if (cardIndex >= 0 && cardIndex <= 3) {
+                    validCardInput = true;
+                } else {
+                    alert('Please enter a number between 1 and 4.');
+                }
+            }
+            
+            if (ws) {
+                ws.send(JSON.stringify({
+                    type: 'use_special',
+                    action: 'view_other',
+                    target: { 
+                        player_id: otherPlayers[playerIndex].id,
+                        card_index: cardIndex 
+                    }
+                }));
+            }
+        }
+
+        function useSpecialCard9() {
+            // Card 9: Swap any two cards on the table
+            if (gameState.players.length < 2) {
+                alert('Need at least 2 players to swap cards!');
+                return;
+            }
+            
+            const allPlayers = gameState.players;
+            let playerOptions = allPlayers.map((p, i) => `${i + 1}. ${p.nickname}`).join('\n');
+            
+            // Get first card
+            let player1Index, card1Index;
+            let validInput1 = false;
+            
+            while (!validInput1) {
+                const input = prompt(`Choose FIRST card to swap:\n${playerOptions}\n\nWhose card? (Enter number):`);
+                if (input === null) return;
+                
+                player1Index = parseInt(input) - 1;
+                if (player1Index >= 0 && player1Index < allPlayers.length) {
+                    validInput1 = true;
+                } else {
+                    alert(`Please enter a number between 1 and ${allPlayers.length}.`);
+                }
+            }
+            
+            let validCard1 = false;
+            while (!validCard1) {
+                const input = prompt(`Which of ${allPlayers[player1Index].nickname}'s cards? (Enter 1, 2, 3, or 4):`);
+                if (input === null) return;
+                
+                card1Index = parseInt(input) - 1;
+                if (card1Index >= 0 && card1Index <= 3) {
+                    validCard1 = true;
+                } else {
+                    alert('Please enter a number between 1 and 4.');
+                }
+            }
+            
+            // Get second card
+            let player2Index, card2Index;
+            let validInput2 = false;
+            
+            while (!validInput2) {
+                const input = prompt(`Choose SECOND card to swap:\n${playerOptions}\n\nWhose card? (Enter number):`);
+                if (input === null) return;
+                
+                player2Index = parseInt(input) - 1;
+                if (player2Index >= 0 && player2Index < allPlayers.length) {
+                    validInput2 = true;
+                } else {
+                    alert(`Please enter a number between 1 and ${allPlayers.length}.`);
+                }
+            }
+            
+            let validCard2 = false;
+            while (!validCard2) {
+                const input = prompt(`Which of ${allPlayers[player2Index].nickname}'s cards? (Enter 1, 2, 3, or 4):`);
+                if (input === null) return;
+                
+                card2Index = parseInt(input) - 1;
+                if (card2Index >= 0 && card2Index <= 3) {
+                    validCard2 = true;
+                } else {
+                    alert('Please enter a number between 1 and 4.');
+                }
+            }
+            
+            if (ws) {
+                ws.send(JSON.stringify({
+                    type: 'use_special',
+                    action: 'swap_cards',
+                    target: {
+                        swap1: { player_id: allPlayers[player1Index].id, card_index: card1Index },
+                        swap2: { player_id: allPlayers[player2Index].id, card_index: card2Index }
+                    }
+                }));
+            }
+        }
+
+        function showGameResults(results) {
+            const modal = document.getElementById('gameResultsModal');
+            const content = document.getElementById('resultsContent');
+            
+            let html = `
+                <div class="winner-announcement">
+                    <h3>${results.message}</h3>
+                </div>
+                <div class="scores-table">
+                    <h4>Final Scores:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Score</th>
+                                <th>Cards</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            results.all_scores.forEach((score, index) => {
+                const rank = index + 1;
+                const isWinner = index === 0;
+                const cardsList = score.cards.map(card => `${card.rank}${getSuitSymbol(card.suit)}`).join(' ');
+                
+                html += `
+                    <tr class="${isWinner ? 'winner-row' : ''}">
+                        <td>${rank}${rank === 1 ? '🏆' : ''}</td>
+                        <td>${score.nickname}</td>
+                        <td>${score.score}</td>
+                        <td>${cardsList}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            content.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
+        function hideGameResults() {
+            document.getElementById('gameResultsModal').style.display = 'none';
+        }
+
+        function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (message && ws) {
+                ws.send(JSON.stringify({
+                    type: 'chat',
+                    message: message
+                }));
+                chatInput.value = '';
+            }
+        }
+
+        function addChatMessage(player, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message';
+            messageElement.innerHTML = `
+                <span class="chat-player">${player}:</span>
+                <span class="chat-text">${message}</span>
+            `;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function copyRoomCode() {
+            navigator.clipboard.writeText(roomId).then(() => {
+                alert('Room code copied to clipboard!');
+            });
+        }
+
+        // Enter key for chat
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        // Initialize when page loads
+        window.addEventListener('load', initializeGame);
+    </script>
+</body>
+</html> 
