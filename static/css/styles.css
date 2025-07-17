@@ -5,6 +5,35 @@
     box-sizing: border-box;
 }
 
+/* Prevent auto-zoom on iOS when focusing inputs */
+@supports (-webkit-touch-callout: none) {
+    input[type="text"], input[type="email"], input[type="tel"], textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Improve touch scrolling on mobile */
+.chat-messages, .reference-content {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text selection on game elements for better mobile UX */
+.card, .btn, .player-card, .game-header {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Allow text selection for inputs and text areas */
+input, textarea, .chat-message, .rule-text {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -120,6 +149,11 @@ body {
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
 .btn-secondary {
     background: #e2e8f0;
     color: #4a5568;
@@ -127,6 +161,11 @@ body {
 
 .btn-secondary:hover {
     background: #cbd5e0;
+}
+
+.btn-secondary:active {
+    background: #a0aec0;
+    transform: translateY(1px);
 }
 
 .btn-danger {
@@ -361,6 +400,27 @@ body {
 .card:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.card:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 768px) {
+    .card:hover {
+        transform: none;
+    }
+    
+    .card:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .btn:active {
+        transform: scale(0.98);
+    }
 }
 
 .card-back {
@@ -667,9 +727,32 @@ body {
 }
 
 /* Responsive Design */
+
+/* Large tablets and small desktops */
+@media (max-width: 1024px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .game-container {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .title {
+        font-size: 3.5rem;
+    }
+    
+    .card-reference-section {
+        max-height: 300px;
+    }
+}
+
+/* Tablets */
 @media (max-width: 768px) {
     .game-setup {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
     
     .game-options {
@@ -686,41 +769,497 @@ body {
             "main"
             "sidebar";
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
+        grid-template-rows: auto 1fr auto;
+        height: auto;
+        min-height: 100vh;
     }
     
-    .players-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    .game-header {
+        padding: 15px 20px;
+    }
+    
+    .room-info h1 {
+        font-size: 1.3rem;
+    }
+    
+    .game-main {
+        padding: 20px;
+        order: 1;
+    }
+    
+    .right-sidebar {
+        order: 2;
+        flex-direction: row;
+        gap: 15px;
     }
     
     .chat-section {
-        height: 250px;
+        height: 300px;
+        flex: 1;
     }
     
     .chat-messages {
-        max-height: 150px;
+        max-height: 180px;
+    }
+    
+    .card-reference-section {
+        flex: 1;
+        max-height: 300px;
+    }
+    
+    .players-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+    }
+    
+    .player-card {
+        padding: 15px;
+    }
+    
+    .title {
+        font-size: 2.8rem;
+    }
+    
+    .deck-area {
+        gap: 20px;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .card {
+        width: 70px;
+        height: 100px;
+    }
+    
+    .hand-card {
+        width: 65px;
+        height: 95px;
+    }
+    
+    .drawn-card {
+        width: 70px;
+        height: 100px;
     }
     
     .hand-cards {
         flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .game-container {
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .header {
+        margin-bottom: 20px;
     }
     
     .title {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
+        margin-bottom: 5px;
+    }
+    
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    .setup-card, .rules-section {
+        padding: 20px;
+        border-radius: 12px;
+    }
+    
+    .setup-card h2, .rules-section h3 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+    
+    /* Make buttons and inputs more touch-friendly */
+    .btn {
+        padding: 14px 20px;
+        font-size: 1.1rem;
+        min-height: 48px;
+        border-radius: 10px;
+    }
+    
+    .btn-small {
+        padding: 10px 16px;
+        font-size: 1rem;
+        min-height: 40px;
+    }
+    
+    .input-group input {
+        padding: 14px 16px;
+        font-size: 1.1rem;
+        min-height: 48px;
+        border-radius: 10px;
+    }
+    
+    .game-header {
+        padding: 12px 15px;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .room-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .room-info h1 {
+        font-size: 1.2rem;
+        margin: 0;
+    }
+    
+    .game-status {
+        font-size: 1rem;
+    }
+    
+    .game-main {
+        padding: 15px;
+    }
+    
+    .players-section {
+        margin-bottom: 20px;
+    }
+    
+    .players-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+    }
+    
+    .player-card {
+        padding: 12px;
+        border-radius: 8px;
+    }
+    
+    .player-name {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    
+    .mini-card {
+        width: 16px;
+        height: 24px;
+    }
+    
+    .game-area {
+        gap: 20px;
+    }
+    
+    .table-cards {
+        margin-bottom: 20px;
     }
     
     .deck-area {
+        flex-direction: row;
         gap: 15px;
+        justify-content: center;
     }
     
+    /* Larger cards for better mobile interaction */
     .card {
-        width: 60px;
-        height: 90px;
+        width: 80px;
+        height: 120px;
+        font-size: 0.9rem;
     }
     
     .hand-card {
-        width: 55px;
-        height: 80px;
+        width: 75px;
+        height: 110px;
+    }
+    
+    .drawn-card {
+        width: 80px;
+        height: 120px;
+    }
+    
+    .card-rank {
+        top: 6px;
+        left: 6px;
+        font-size: 1.1rem;
+    }
+    
+    .card-suit {
+        font-size: 2.2rem;
+    }
+    
+    .hand-cards {
+        gap: 6px;
+        justify-content: center;
+    }
+    
+    .player-hand h3 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+    
+    .drawn-card-area {
+        gap: 12px;
+    }
+    
+    .card-actions {
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .special-actions {
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+    
+    .special-actions h4 {
+        font-size: 1.1rem;
+        margin-bottom: 12px;
+    }
+    
+    .special-buttons {
+        gap: 8px;
+    }
+    
+    .special-note {
+        font-size: 0.85rem;
+    }
+    
+    .turn-indicator {
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 1rem;
+        text-align: center;
+    }
+    
+    #turnText {
+        line-height: 1.3;
+    }
+    
+    .right-sidebar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .chat-section {
+        height: 250px;
+        padding: 15px;
+        border-radius: 12px;
+    }
+    
+    .chat-header h3 {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    .chat-messages {
+        max-height: 140px;
+        min-height: 100px;
+    }
+    
+    .chat-message {
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+    
+    .chat-input input {
+        font-size: 1rem;
+        padding: 12px;
+        min-height: 44px;
+        border-radius: 8px;
+    }
+    
+    .chat-input button {
+        min-height: 44px;
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+    
+    .card-reference-section {
+        padding: 12px;
+        border-radius: 12px;
+        max-height: 200px;
+    }
+    
+    .reference-header h3 {
+        font-size: 0.95rem;
+    }
+    
+    .value-section h4, .power-section h4 {
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+    
+    .value-item {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .power-item {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .power-note small {
+        font-size: 0.65rem;
+    }
+    
+    /* Game Results Modal Mobile Optimization */
+    .game-results-modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        padding: 20px;
+        border-radius: 12px;
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+    
+    .winner-announcement {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+    
+    .winner-announcement h3 {
+        font-size: 1.2rem;
+    }
+    
+    .scores-table table {
+        font-size: 0.9rem;
+    }
+    
+    .scores-table th,
+    .scores-table td {
+        padding: 8px 6px;
+    }
+    
+    .scores-table th {
+        font-size: 0.8rem;
+    }
+    
+    /* Peek Overlay Mobile Optimization */
+    .peek-overlay {
+        padding: 10px;
+    }
+    
+    .peek-content {
+        padding: 25px 20px;
+        border-radius: 15px;
+        width: 95%;
+        max-width: 400px;
+    }
+    
+    .peek-content h2 {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+    }
+    
+    .peek-content p {
+        font-size: 1rem;
+        margin-bottom: 20px;
+    }
+    
+    .peek-cards {
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .peeked-card {
+        width: 80px;
+        height: 120px;
+        font-size: 1rem;
+    }
+    
+    .peeked-card .card-rank {
+        top: 8px;
+        left: 8px;
+        font-size: 1.2rem;
+    }
+    
+    .peeked-card .card-suit {
+        font-size: 2.5rem;
+    }
+    
+    .countdown {
+        font-size: 1.1rem;
+    }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 320px) {
+    .title {
+        font-size: 1.8rem;
+    }
+    
+    .players-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .card {
+        width: 70px;
+        height: 105px;
+    }
+    
+    .hand-card {
+        width: 65px;
+        height: 95px;
+    }
+    
+    .drawn-card {
+        width: 70px;
+        height: 105px;
+    }
+    
+    .deck-area {
+        gap: 10px;
+    }
+    
+    .hand-cards {
+        gap: 4px;
+    }
+    
+    .card-actions {
+        flex-direction: column;
+    }
+    
+    .special-buttons {
+        gap: 6px;
+    }
+    
+    .chat-section {
+        height: 200px;
+    }
+    
+    .chat-messages {
+        max-height: 100px;
+    }
+    
+    .peek-cards {
+        gap: 8px;
+    }
+    
+    .peeked-card {
+        width: 70px;
+        height: 105px;
+    }
+    
+    .modal-content {
+        padding: 15px;
     }
 }
 
